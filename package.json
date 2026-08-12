@@ -1,0 +1,14 @@
+{
+  "name": "qr-file-transfer",
+  "version": "1.0.0",
+  "description": "Transfer files between phone and computer over LAN by scanning a QR code, using WebRTC (no Bluetooth/AirDrop).",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "qrcode": "^1.5.4",
+    "ws": "^8.18.0"
+  }
+}

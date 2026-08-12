@@ -1,0 +1,8 @@
+node_modules/
+*.mp4
+.DS_Store
+*.swp
+*~
+.vscode/
+.idea/
+*.log

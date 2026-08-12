@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#F9F8F6" />
+<title>Beam — QR File Transfer</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="head">
+      <div class="brand"><span class="bolt">⚡</span> Beam</div>
+      <div class="pill" id="pill"><span class="dot" id="dot"></span><span id="pill-text">Starting…</span></div>
+    </header>
+
+    <!-- PAIRING -->
+    <section id="pair" class="card center hidden">
+      <h2 class="pair-title">Scan to connect</h2>
+      <p class="sub">Point your phone's camera at this code.</p>
+      <div class="qr-frame">
+        <img id="qr-img" alt="QR code to pair your phone" />
+        <div class="scanline"></div>
+      </div>
+      <p class="url" id="join-url"></p>
+      <p class="hint">Both devices must be on the same Wi‑Fi. Files travel device‑to‑device — never through a cloud.</p>
+    </section>
+
+    <!-- CONNECTING (peer) -->
+    <section id="connecting" class="card center hidden">
+      <div class="spinner"></div>
+      <h2 class="pair-title">Connecting…</h2>
+      <p class="sub">Linking to your computer.</p>
+    </section>
+
+    <!-- TRANSFER -->
+    <section id="transfer" class="hidden">
+      <div class="card drop" id="drop">
+        <input type="file" id="file-input" multiple hidden />
+        <div class="drop-inner">
+          <div class="drop-icon">↑</div>
+          <div class="drop-main">Drop files here</div>
+          <div class="drop-sub">or <button class="link" id="browse">browse</button> · paste works too</div>
+        </div>
+      </div>
+
+      <div class="card compose">
+        <textarea id="text-input" rows="1" placeholder="…or send a link / snippet of text"></textarea>
+        <button id="send-text" class="btn small">Send</button>
+      </div>
+
+      <section class="list-block hidden" id="out-block">
+        <h3 class="list-head">Sending</h3>
+        <ul class="list" id="out-list"></ul>
+      </section>
+
+      <section class="list-block hidden" id="in-block">
+        <div class="list-head-row">
+          <h3 class="list-head">Received</h3>
+          <label class="auto"><input type="checkbox" id="auto-dl" /> auto‑save</label>
+        </div>
+        <ul class="list" id="in-list"></ul>
+      </section>
+    </section>
+
+    <p class="footer">Peer‑to‑peer over your local network · no accounts, no uploads</p>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
