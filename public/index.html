@@ -16,58 +16,62 @@
     </header>
 
     <!-- PAIRING -->
-    <section id="pair" class="card center hidden">
-      <h2 class="pair-title">Scan to connect</h2>
-      <p class="sub">Point your phone's camera at this code.</p>
+    <section id="pair" class="pane center hidden">
       <div class="qr-frame">
         <img id="qr-img" alt="QR code to pair your phone" />
         <div class="scanline"></div>
       </div>
-      <p class="url" id="join-url"></p>
-      <p class="hint">Both devices must be on the same Wi‑Fi. Files travel device‑to‑device — never through a cloud.</p>
+      <h2 class="pair-title">Scan to connect</h2>
+      <p class="sub">Point your phone's camera at this code — files travel directly between your devices, never through the cloud.</p>
+      <button class="ghost-link" id="copy-link">Copy link instead</button>
     </section>
 
     <!-- CONNECTING (peer) -->
-    <section id="connecting" class="card center hidden">
+    <section id="connecting" class="pane center hidden">
       <div class="spinner"></div>
       <h2 class="pair-title">Connecting…</h2>
-      <p class="sub">Linking to your computer.</p>
     </section>
 
     <!-- TRANSFER -->
-    <section id="transfer" class="hidden">
-      <div class="card drop" id="drop">
+    <section id="transfer" class="pane hidden">
+      <div class="drop" id="drop">
         <input type="file" id="file-input" multiple hidden />
         <div class="drop-inner">
           <div class="drop-icon">↑</div>
-          <div class="drop-main">Drop files here</div>
-          <div class="drop-sub">or <button class="link" id="browse">browse</button> · paste works too</div>
+          <div class="drop-main">Drop files, or tap to browse</div>
+          <div class="drop-sub">Paste works too</div>
         </div>
       </div>
 
-      <div class="card compose">
-        <textarea id="text-input" rows="1" placeholder="…or send a link / snippet of text"></textarea>
+      <div class="quick-row">
+        <button class="chip" id="text-toggle">＋ Text or link</button>
+        <label class="chip toggle" id="auto-chip">
+          <input type="checkbox" id="auto-dl" />
+          <span>Auto‑save</span>
+        </label>
+      </div>
+
+      <div class="compose hidden" id="compose">
+        <textarea id="text-input" rows="1" placeholder="Paste a link or note…"></textarea>
         <button id="send-text" class="btn small">Send</button>
+        <button id="close-compose" class="icon-btn" aria-label="Cancel" type="button">✕</button>
       </div>
 
-      <section class="list-block hidden" id="out-block">
-        <h3 class="list-head">Sending</h3>
-        <ul class="list" id="out-list"></ul>
-      </section>
-
-      <section class="list-block hidden" id="in-block">
-        <div class="list-head-row">
-          <h3 class="list-head">Received</h3>
-          <label class="auto"><input type="checkbox" id="auto-dl" /> auto‑save</label>
-        </div>
-        <ul class="list" id="in-list"></ul>
+      <section class="list-block hidden" id="activity-block">
+        <h3 class="list-head">Activity</h3>
+        <ul class="list" id="activity-list"></ul>
       </section>
     </section>
-
-    <p class="footer">Peer‑to‑peer over your local network · no accounts, no uploads</p>
   </main>
 
+  <div class="success-flash hidden" id="success-flash">
+    <div class="success-circle">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

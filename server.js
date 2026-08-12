@@ -3,7 +3,6 @@ const { WebSocketServer } = require('ws');
 const http = require('http');
 const os = require('os');
 const crypto = require('crypto');
-const QRCode = require('qrcode');
 
 const PORT = process.env.PORT || 6798;
 const SESSION_TTL_MS = 5 * 60 * 1000; // drop unpaired sessions after 5 minutes
@@ -18,14 +17,14 @@ app.get('/s/:id', (req, res) => {
 
 const server = http.createServer(app);
 
-app.post('/api/session', express.json(), async (req, res) => {
+app.post('/api/session', express.json(), (req, res) => {
   const id = crypto.randomUUID();
   const token = crypto.randomBytes(8).toString('hex');
   sessions.set(id, { host: null, peer: null, token, createdAt: Date.now() });
   const lanIp = getLanIp();
   const joinUrl = `http://${lanIp}:${PORT}/s/${id}?t=${token}`;
-  const qrDataUrl = await QRCode.toDataURL(joinUrl, { width: 240, margin: 1, color: { dark: '#2D2D2D', light: '#F9F8F6' } });
-  res.json({ id, token, lanIp, port: PORT, joinUrl, qrDataUrl });
+  // QR generation moved to client to avoid blocking server on CPU
+  res.json({ id, token, lanIp, port: PORT, joinUrl });
 });
 
 // session id -> { host: ws|null, peer: ws|null, token, createdAt }
