@@ -20,13 +20,25 @@
 
   // --- Tuning -------------------------------------------------------------
   // Read the file in large blocks (few disk round-trips), then push it out in
-  // chunks small enough for SCTP. 8MB of in-flight data keeps the pipe full on
-  // fast LANs without letting the send queue grow without bound.
-  const BLOCK_SIZE = 8 * 1024 * 1024;
-  const HIGH_WATER = 8 * 1024 * 1024;
+  // chunks small enough for SCTP. Adaptive buffer sizing based on device RAM.
   const DEFAULT_CHUNK = 1024 * 1024; // 1 MB: 4x fewer send() calls, 10-15% throughput boost
-  const UI_INTERVAL = 100; // ms between progress repaints — reduced from 50ms to cut reflows 50%
   const AUTO_SAVE_KEY = 'beam-autosave';
+  const MAX_LIST_ITEMS = 50; // Cap activity list to prevent DOM bloat on long sessions
+
+  // Adaptive buffer sizing: detect device memory and tune BLOCK_SIZE + HIGH_WATER accordingly.
+  // Devices with ≤2GB get smaller buffers to prevent GC jank; modern devices use full 8MB.
+  const deviceMemory = navigator.deviceMemory || 8; // 8GB default if API unavailable
+  let BLOCK_SIZE, HIGH_WATER;
+  if (deviceMemory <= 2) {
+    BLOCK_SIZE = 2 * 1024 * 1024;  // 2 MB on weak devices
+    HIGH_WATER = 2 * 1024 * 1024;
+  } else if (deviceMemory <= 4) {
+    BLOCK_SIZE = 4 * 1024 * 1024;  // 4 MB on mid-range
+    HIGH_WATER = 4 * 1024 * 1024;
+  } else {
+    BLOCK_SIZE = 8 * 1024 * 1024;  // 8 MB on capable devices
+    HIGH_WATER = 8 * 1024 * 1024;
+  }
 
   const isPeer = /^\/s\/[^/]+$/.test(location.pathname);
   const role = isPeer ? 'peer' : 'host';
@@ -37,6 +49,29 @@
   const queue = [];
   let incoming = null;
   let joinUrl = '';
+
+  // RAF batching: track transfers needing progress updates, flush once per frame.
+  const pendingUpdates = new Set();
+  let rafScheduled = false;
+  function scheduleRafUpdate(state) {
+    pendingUpdates.add(state);
+    if (!rafScheduled) {
+      rafScheduled = true;
+      requestAnimationFrame(flushRafUpdates);
+    }
+  }
+  function flushRafUpdates() {
+    rafScheduled = false;
+    for (const state of pendingUpdates) {
+      const rate = ((state.received - state.lastBytes) * 1000) / (state.now - state.lastTime);
+      state.ui.bar.style.width = `${(state.received / state.size) * 100}%`;
+      state.ui.meta.textContent = `${fmtBytes(state.received)} / ${fmtBytes(state.size)} · ${fmtRate(rate)} · ${fmtEta((state.size - state.received) / rate)}`;
+      state.lastPaint = state.now;
+      state.lastBytes = state.received;
+      state.lastTime = state.now;
+    }
+    pendingUpdates.clear();
+  }
 
   // --- Helpers ------------------------------------------------------------
   const fmtBytes = (n) => {
@@ -102,6 +137,12 @@
   const once = (target, event) => new Promise((res) => target.addEventListener(event, res, { once: true }));
 
   // --- List item rendering (unified sent + received activity feed) --------
+  function trimActivityList() {
+    while (el.activityList.children.length > MAX_LIST_ITEMS) {
+      el.activityList.lastElementChild.remove();
+    }
+  }
+
   function makeItem({ name, size, mime, dir }) {
     el.activityBlock.classList.remove('hidden');
     const li = document.createElement('li');
@@ -120,6 +161,7 @@
     li.querySelector('.item-name').textContent = name;
     li.querySelector('.item-meta').textContent = `${dir === 'out' ? '↑ Sending' : '↓ Receiving'} · ${fmtBytes(size)}`;
     el.activityList.prepend(li);
+    trimActivityList();
     return {
       li,
       meta: li.querySelector('.item-meta'),
@@ -163,6 +205,7 @@
     let lastPaint = 0;
     let lastBytes = 0;
     let lastTime = started;
+    const sendState = { ui, received: sent, size: file.size, lastBytes, lastTime, lastPaint, now: 0 };
 
     for (let blockStart = 0; blockStart < file.size; blockStart += BLOCK_SIZE) {
       const block = await file.slice(blockStart, Math.min(blockStart + BLOCK_SIZE, file.size)).arrayBuffer();
@@ -181,9 +224,9 @@
 
         const now = performance.now();
         if (now - lastPaint > UI_INTERVAL) {
-          const rate = ((sent - lastBytes) * 1000) / (now - lastTime);
-          ui.bar.style.width = `${(sent / file.size) * 100}%`;
-          ui.meta.textContent = `${fmtBytes(sent)} / ${fmtBytes(file.size)} · ${fmtRate(rate)} · ${fmtEta((file.size - sent) / rate)}`;
+          sendState.received = sent;
+          sendState.now = now;
+          scheduleRafUpdate(sendState);
           lastPaint = now;
           lastBytes = sent;
           lastTime = now;
@@ -265,6 +308,7 @@
       catch { toast('Copy blocked by browser'); }
     });
     el.activityList.prepend(li);
+    trimActivityList();
     if (dir === 'in') toast('Text received');
   }
 
@@ -303,12 +347,9 @@
 
       const now = performance.now();
       if (now - incoming.lastPaint > UI_INTERVAL) {
-        const rate = ((incoming.received - incoming.lastBytes) * 1000) / (now - incoming.lastTime);
-        incoming.ui.bar.style.width = `${(incoming.received / incoming.size) * 100}%`;
-        incoming.ui.meta.textContent = `${fmtBytes(incoming.received)} / ${fmtBytes(incoming.size)} · ${fmtRate(rate)} · ${fmtEta((incoming.size - incoming.received) / rate)}`;
+        incoming.now = now;
+        scheduleRafUpdate(incoming);
         incoming.lastPaint = now;
-        incoming.lastBytes = incoming.received;
-        incoming.lastTime = now;
       }
     });
   }
