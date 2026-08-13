@@ -12,10 +12,41 @@
   --good: #4A9C76;
   --warn: #D9A05B;
   --bad: #D95757;
-  --radius: 12px;
   --btn-bg: #2D2D2D;
   --btn-text: #FFFFFF;
   --btn-hover: #1A1A1A;
+
+  /* The QR plate is deliberately light in BOTH themes: inverted QR codes are
+     decoded unreliably by native camera apps, and scanning is the whole point.
+     Must stay in sync with the QR colors passed to QRCode.toDataURL in app.js. */
+  --qr-plate: #FFFFFF;
+
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+
+  /* Spacing ladder. Redefined per density — see [data-density] blocks. */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 28px;
+  --sp-7: 40px;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+
+  --fs-root: 16px;          /* scales every rem-based type size */
+  --wrap-max: 480px;
+  --ctl-h: 44px;            /* constant across densities — a fingertip is not a design token */
+  --compose-max-h: 120px;
+
+  /* Motion. Redefined under [data-motion="reduced"] — one lever, not per-rule. */
+  --dur-fast: 150ms;
+  --dur: 250ms;
+  --dur-slow: 500ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -49,9 +80,9 @@ body {
 }
 
 .wrap {
-  max-width: 480px;
+  max-width: var(--wrap-max);
   margin: 0 auto;
-  padding: 28px 20px calc(40px + env(safe-area-inset-bottom));
+  padding: var(--sp-6) var(--sp-5) calc(var(--sp-7) + env(safe-area-inset-bottom));
   min-height: 100%;
   display: flex;
   flex-direction: column;
@@ -61,7 +92,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 40px;
+  margin-bottom: var(--sp-7);
 }
 
 .brand {
@@ -79,8 +110,8 @@ body {
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 13px;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -106,7 +137,7 @@ body {
 }
 
 /* --- Pane transitions (250ms: 2x snappier, keeps smoothness) ------ */
-.pane { animation: paneIn 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+.pane { animation: paneIn var(--dur) var(--ease-out); }
 .pane.hidden { display: none; }
 @keyframes paneIn {
   from { opacity: 0; transform: translateY(10px); }
@@ -119,13 +150,13 @@ body {
 .qr-frame {
   position: relative;
   display: inline-block;
-  padding: 18px;
-  background: #F9F8F6;
-  border-radius: 16px;
+  padding: var(--sp-4);
+  background: var(--qr-plate);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--line);
   overflow: hidden;
   box-shadow: 0 8px 28px rgba(0,0,0,0.06);
-  margin: 12px 0 28px;
+  margin: var(--sp-3) 0 var(--sp-6);
 }
 
 #qr-img { display: block; width: 232px; height: 232px; image-rendering: pixelated; }
@@ -162,10 +193,10 @@ body {
 
 .ghost-link {
   display: inline-block;
-  margin-top: 22px;
+  margin-top: var(--sp-5);
   background: none;
   border: none;
-  padding: 6px 4px;
+  padding: var(--sp-2) var(--sp-1);
   color: var(--muted);
   font: inherit;
   font-size: 0.85rem;
@@ -178,7 +209,7 @@ body {
 
 .spinner {
   width: 32px; height: 32px;
-  margin: 8px auto 20px;
+  margin: var(--sp-2) auto var(--sp-5);
   border: 2px solid var(--line);
   border-top-color: var(--text);
   border-radius: 50%;
@@ -196,7 +227,7 @@ body {
   background: rgba(0,0,0,0);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  transition: opacity var(--dur) ease;
   z-index: 100;
 }
 .success-flash.hidden { display: none; }
@@ -208,7 +239,7 @@ body {
   display: grid;
   place-items: center;
   transform: scale(0.4);
-  animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: popIn var(--dur-slow) var(--ease-spring) forwards;
   box-shadow: 0 10px 34px rgba(74,156,118,0.45);
 }
 @keyframes popIn { to { transform: scale(1); } }
@@ -219,8 +250,8 @@ body {
   background: var(--card2);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 44px 20px;
+  transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease, transform var(--dur-fast) ease;
+  padding: var(--sp-7) var(--sp-5);
   text-align: center;
 }
 .drop:hover { border-color: var(--text); background: var(--card); }
@@ -232,8 +263,8 @@ body {
 }
 .drop-icon {
   width: 50px; height: 50px;
-  margin: 0 auto 16px;
-  border-radius: 13px;
+  margin: 0 auto var(--sp-4);
+  border-radius: var(--radius);
   display: grid; place-items: center;
   font-size: 1.4rem; font-weight: 500;
   color: var(--btn-text);
@@ -241,20 +272,21 @@ body {
   box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 .drop-main { font-weight: 500; font-size: 1.05rem; }
-.drop-sub { color: var(--muted); font-size: 0.88rem; margin-top: 6px; }
+.drop-sub { color: var(--muted); font-size: 0.88rem; margin-top: var(--sp-1); }
 
 /* --- Quick actions row ------------------------------------------------ */
 .quick-row {
   display: flex;
-  gap: 10px;
-  margin-top: 14px;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
 }
 
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 15px;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  min-height: var(--ctl-h);
   border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--card);
@@ -262,7 +294,7 @@ body {
   font-size: 0.85rem;
   color: var(--muted);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease, background var(--dur-fast) ease;
   white-space: nowrap;
 }
 .chip:hover { border-color: var(--muted); color: var(--text); }
@@ -282,28 +314,28 @@ body {
 /* --- Compose (collapsed by default) ------------------------------------ */
 .compose {
   display: flex;
-  gap: 10px;
+  gap: var(--sp-2);
   align-items: flex-end;
-  margin-top: 14px;
-  padding: 12px;
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  animation: paneIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: paneIn var(--dur-fast) var(--ease-out);
 }
 #text-input {
   flex: 1;
   background: var(--card2);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: var(--text);
   font: inherit;
   font-size: 0.95rem;
   resize: none;
-  padding: 11px 12px;
-  max-height: 120px;
+  padding: var(--sp-3);
+  max-height: var(--compose-max-h);
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: border-color var(--dur-fast) ease;
 }
 #text-input:focus { border-color: var(--text); }
 #text-input::placeholder { color: var(--muted); }
@@ -313,10 +345,10 @@ body {
   border: none;
   color: var(--muted);
   font-size: 0.9rem;
-  width: 38px; height: 38px;
-  border-radius: 8px;
+  width: var(--ctl-h); height: var(--ctl-h);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
   flex: none;
 }
 .icon-btn:hover { background: var(--card2); color: var(--text); }
@@ -325,29 +357,30 @@ body {
   background: var(--btn-bg);
   color: var(--btn-text);
   border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  padding: var(--sp-3) var(--sp-5);
+  min-height: var(--ctl-h);
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background var(--dur-fast) ease, transform var(--dur-fast) ease;
   flex: none;
 }
 .btn:hover { background: var(--btn-hover); }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn.small { padding: 10px 16px; font-size: 0.9rem; }
+.btn.small { padding: var(--sp-2) var(--sp-4); font-size: 0.9rem; }
 
 /* --- Activity list (unified sent + received) --------------------------- */
-.list-block { margin-top: 28px; }
+.list-block { margin-top: var(--sp-6); }
 .list-head {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 600;
   color: var(--muted);
-  margin: 0 0 12px;
-  padding-left: 4px;
+  margin: 0 0 var(--sp-3);
+  padding-left: var(--sp-1);
 }
 
 .list { list-style: none; padding: 0; margin: 0; }
@@ -355,10 +388,10 @@ body {
 .item {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin-bottom: 10px;
-  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-2);
+  animation: slideIn var(--dur) var(--ease-out);
   box-shadow: 0 2px 6px rgba(0,0,0,0.015);
 }
 @keyframes slideIn {
@@ -366,10 +399,10 @@ body {
   to { opacity: 1; transform: none; }
 }
 
-.item-row { display: flex; align-items: center; gap: 14px; }
+.item-row { display: flex; align-items: center; gap: var(--sp-3); }
 .item-icon {
   width: 36px; height: 36px; flex: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--card2);
   border: 1px solid var(--line);
   display: grid; place-items: center;
@@ -387,7 +420,7 @@ body {
 .item-meta {
   font-size: 0.8rem;
   color: var(--muted);
-  margin-top: 4px;
+  margin-top: var(--sp-1);
   font-variant-numeric: tabular-nums;
 }
 .item-meta .dir { opacity: 0.7; }
@@ -398,11 +431,11 @@ body {
   text-decoration: none;
   background: var(--card2);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   white-space: nowrap;
-  padding: 6px 12px;
-  transition: all 0.15s ease;
+  padding: var(--sp-2) var(--sp-3);
+  transition: background var(--dur-fast) ease;
 }
 .item-action a:hover, .item-action button:hover {
   background: var(--line);
@@ -413,7 +446,7 @@ body {
   background: var(--line);
   border-radius: 4px;
   overflow: hidden;
-  margin-top: 12px;
+  margin-top: var(--sp-3);
 }
 .bar > i {
   display: block;
@@ -430,11 +463,11 @@ body {
   line-height: 1.6;
   word-break: break-word;
   white-space: pre-wrap;
-  margin-top: 12px;
-  padding: 14px;
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
   background: var(--card2);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   max-height: 160px;
   overflow: auto;
   color: var(--text);
@@ -446,24 +479,25 @@ body {
 .toast {
   position: fixed;
   left: 50%;
-  bottom: 32px;
+  bottom: var(--sp-6);
   transform: translate(-50%, 10px);
   background: var(--text);
   border: 1px solid var(--line);
   color: var(--bg);
-  padding: 12px 24px;
-  border-radius: 8px;
+  padding: var(--sp-3) var(--sp-5);
+  border-radius: var(--radius-sm);
   font-size: 0.9rem;
   font-weight: 500;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity var(--dur) var(--ease-out), transform var(--dur) var(--ease-out);
   box-shadow: 0 10px 30px rgba(0,0,0,0.15);
   z-index: 50;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 @media (max-width: 420px) {
+  /* QR shrinks by viewport only, never by density — scan reliability. */
   #qr-img { width: 200px; height: 200px; }
-  .drop { padding: 36px 16px; }
+  .drop { padding: var(--sp-6) var(--sp-4); }
 }
