@@ -121,9 +121,17 @@ setInterval(() => {
 }, 25000);
 
 function getLanIp() {
-  // When hotspotting from an iPhone, the Mac gets a weird 192.0.0.2/32 IP
-  // that the iPhone itself refuses to route to. Using the Bonjour mDNS
-  // hostname works natively across Apple devices and bypasses this.
+  // Get the actual IPv4 address from network interfaces (most reliable for QR codes).
+  // Fallback to hostname if no IPv4 found (rare).
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  // Fallback to hostname if no IPv4 found
   const hostname = os.hostname().replace(/\.local$/, '');
   return `${hostname}.local`;
 }
