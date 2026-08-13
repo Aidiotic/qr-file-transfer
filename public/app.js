@@ -664,7 +664,11 @@
       joinUrl = url;
       // Client-side QR generation (avoids blocking server on CPU, especially useful on slow networks)
       try {
-        const qrDataUrl = await QRCode.toDataURL(url, { width: 240, margin: 1, color: { dark: '#2D2D2D', light: '#F9F8F6' } });
+        // Rendered at exactly 2x the 240px CSS box so modules land on whole
+        // device pixels. Colours stay pure black on white in both themes and
+        // must match --qr-plate in style.css: inverted codes decode
+        // unreliably in native camera apps, and that scan is the whole point.
+        const qrDataUrl = await QRCode.toDataURL(url, { width: 480, margin: 1, color: { dark: '#000000', light: '#FFFFFF' } });
         el.qrImg.src = qrDataUrl;
       } catch (err) {
         console.error('QR generation failed:', err);

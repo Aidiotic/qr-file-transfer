@@ -162,8 +162,9 @@ body {
   letter-spacing: -0.01em;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
   color: var(--text);
+  flex: none;
 }
 
 .bolt { color: var(--accent); }
@@ -173,11 +174,20 @@ body {
   align-items: center;
   gap: var(--sp-2);
   padding: var(--sp-2) var(--sp-3);
+  margin: 0;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 999px;
   font-size: 0.82rem;
   color: var(--muted);
+  /* Long statuses ("Computer disconnected") must truncate rather than push the
+     settings button off the edge on narrow screens. */
+  min-width: 0;
+  overflow: hidden;
+}
+#pill-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -191,11 +201,9 @@ body {
 .dot[data-state="live"] { background: var(--good); }
 .dot[data-state="dead"] { background: var(--bad); }
 
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(74,156,118,.5); }
-  70% { box-shadow: 0 0 0 7px rgba(74,156,118,0); }
-  100% { box-shadow: 0 0 0 0 rgba(74,156,118,0); }
-}
+/* The dot's `pulse` keyframe was removed: an infinite animation on a 6px dot
+   is decoration, colour already carries the state, and the pill text carries it
+   for assistive tech. */
 
 /* --- Stage -----------------------------------------------------------------
    Regions are gated declaratively by the stage's data-state. JS writes one
@@ -231,21 +239,12 @@ body {
   margin: var(--sp-3) 0 var(--sp-6);
 }
 
-#qr-img { display: block; width: 232px; height: 232px; image-rendering: pixelated; }
+/* 240px box for a 480px source — an exact 2x so modules stay crisp. The old
+   232px display of a 240px source produced uneven module widths. */
+#qr-img { display: block; width: 240px; height: 240px; image-rendering: pixelated; }
 
-.scanline {
-  position: absolute;
-  left: 0; right: 0; height: 100%;
-  top: -100%;
-  background: linear-gradient(180deg, transparent, rgba(217,119,87,0.12), transparent);
-  animation: scan 3s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes scan {
-  0% { top: -100%; }
-  100% { top: 100%; }
-}
+/* The `.scanline` sweep was removed: it ran forever and laid a translucent
+   gradient across a code a camera is actively trying to decode. */
 
 .stage-title {
   font-size: 1.4rem;
@@ -477,11 +476,13 @@ body {
   border-radius: var(--radius-sm);
   padding: var(--sp-3) var(--sp-4);
   margin-bottom: var(--sp-2);
-  animation: slideIn var(--dur) var(--ease-out);
+  animation: slideIn var(--dur-fast) var(--ease-out);
   box-shadow: 0 2px 6px rgba(0,0,0,0.015);
 }
+/* Weakened deliberately: dropping twenty files at once fires twenty of these
+   simultaneously, and a 10px slide at 250ms each reads as chaos. */
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
 }
 
@@ -561,7 +562,8 @@ body {
 .text-body a { color: var(--accent); text-decoration: underline; }
 
 /* --- Settings sheet ---------------------------------------------------- */
-.head-right { display: flex; align-items: center; gap: var(--sp-2); }
+.head-right { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+.head-right .icon-btn { flex: none; }
 
 dialog.sheet {
   border: 1px solid var(--line);
