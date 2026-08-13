@@ -120,20 +120,39 @@ setInterval(() => {
   }
 }, 25000);
 
+// Pick the address the *other* device should dial.
+//
+// A raw "first non-internal IPv4" is wrong in two common cases:
+//   - iPhone Personal Hotspot hands the Mac 192.0.0.2 with a /32 netmask. A /32
+//     describes a subnet of one host, so there is nothing to route to; the
+//     iPhone itself refuses to reach it. This is the case the original mDNS
+//     hostname approach existed to work around.
+//   - A downed interface can leave a 169.254.x.x link-local address behind.
+//
+// So: prefer a genuine private-range address on a real subnet, and fall back to
+// the Bonjour hostname, which resolves natively between Apple devices and is
+// the only thing that works on a hotspot.
 function getLanIp() {
-  // Get the actual IPv4 address from network interfaces (most reliable for QR codes).
-  // Fallback to hostname if no IPv4 found (rare).
-  const interfaces = os.networkInterfaces();
-  for (const name of Object.keys(interfaces)) {
-    for (const iface of interfaces[name]) {
-      if (iface.family === 'IPv4' && !iface.internal) {
-        return iface.address;
-      }
+  const candidates = [];
+  for (const addrs of Object.values(os.networkInterfaces())) {
+    for (const a of addrs || []) {
+      if (a.family !== 'IPv4' || a.internal) continue;
+      if (a.netmask === '255.255.255.255') continue;   // /32: no usable subnet
+      if (a.address.startsWith('169.254.')) continue;  // link-local
+      candidates.push(a.address);
     }
   }
-  // Fallback to hostname if no IPv4 found
-  const hostname = os.hostname().replace(/\.local$/, '');
-  return `${hostname}.local`;
+
+  const isPrivate = (ip) =>
+    ip.startsWith('192.168.') ||
+    ip.startsWith('10.') ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(ip);
+
+  const best = candidates.find(isPrivate) || candidates[0];
+  if (best) return best;
+
+  // No routable IPv4 — hotspot, or Wi-Fi down. mDNS is the reliable path here.
+  return `${os.hostname().replace(/\.local$/, '')}.local`;
 }
 
 server.listen(PORT, () => {
