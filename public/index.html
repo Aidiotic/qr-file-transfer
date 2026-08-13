@@ -33,8 +33,16 @@
 <body>
   <main class="wrap">
     <header class="head">
-      <div class="brand"><span class="bolt">⚡</span> Beam</div>
-      <div class="pill" id="pill"><span class="dot" id="dot"></span><span id="pill-text">Starting…</span></div>
+      <div class="brand"><span class="bolt" aria-hidden="true">⚡</span> Beam</div>
+      <div class="head-right">
+        <p class="pill" id="pill" role="status" aria-live="polite"><span class="dot" id="dot" aria-hidden="true"></span><span id="pill-text">Starting…</span></p>
+        <button type="button" class="icon-btn" id="settings-open" aria-haspopup="dialog" aria-label="Settings">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>
+          </svg>
+        </button>
+      </div>
     </header>
 
     <!-- PAIRING -->
@@ -92,7 +100,43 @@
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
+  <!-- Native <dialog>: focus trap, Esc-to-close, ::backdrop and inert background
+       come free. Radio groups give arrow-key navigation with zero JS. -->
+  <dialog class="sheet" id="settings" aria-labelledby="settings-title">
+    <div class="sheet-head">
+      <h2 class="sheet-title" id="settings-title">Settings</h2>
+      <button type="button" class="icon-btn" id="settings-close" aria-label="Close settings">✕</button>
+    </div>
+
+    <fieldset class="opt">
+      <legend class="opt-label">Appearance</legend>
+      <div class="seg">
+        <input type="radio" name="theme" id="theme-system" value="system" /><label for="theme-system">System</label>
+        <input type="radio" name="theme" id="theme-light"  value="light"  /><label for="theme-light">Light</label>
+        <input type="radio" name="theme" id="theme-dark"   value="dark"   /><label for="theme-dark">Dark</label>
+      </div>
+    </fieldset>
+
+    <fieldset class="opt">
+      <legend class="opt-label">Density</legend>
+      <div class="seg">
+        <input type="radio" name="density" id="den-compact" value="compact" /><label for="den-compact">Compact</label>
+        <input type="radio" name="density" id="den-default" value="default" /><label for="den-default">Default</label>
+        <input type="radio" name="density" id="den-large"   value="large"   /><label for="den-large">Large</label>
+      </div>
+    </fieldset>
+
+    <fieldset class="opt">
+      <legend class="opt-label">Motion</legend>
+      <div class="seg">
+        <input type="radio" name="motion" id="mo-system"  value="system"  /><label for="mo-system">System</label>
+        <input type="radio" name="motion" id="mo-full"    value="full"    /><label for="mo-full">Full</label>
+        <input type="radio" name="motion" id="mo-reduced" value="reduced" /><label for="mo-reduced">Reduced</label>
+      </div>
+    </fieldset>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
   <script src="/qrcode.min.js"></script>
   <script src="/app.js"></script>
 </body>

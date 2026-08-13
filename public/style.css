@@ -527,6 +527,83 @@ body {
 }
 .text-body a { color: var(--accent); text-decoration: underline; }
 
+/* --- Settings sheet ---------------------------------------------------- */
+.head-right { display: flex; align-items: center; gap: var(--sp-2); }
+
+dialog.sheet {
+  border: 1px solid var(--line);
+  padding: var(--sp-5);
+  background: var(--card);
+  color: var(--text);
+  width: 100%;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.18);
+}
+dialog.sheet::backdrop { background: rgba(0,0,0,0.4); }
+
+/* Sheet on phones. */
+@media (max-width: 640px) {
+  dialog.sheet {
+    margin: auto auto 0;
+    max-width: none;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: 0;
+    padding-bottom: calc(var(--sp-5) + env(safe-area-inset-bottom));
+  }
+  dialog.sheet[open] { animation: sheetInUp var(--dur) var(--ease-out); }
+}
+/* Centred modal on desktop. */
+@media (min-width: 641px) {
+  dialog.sheet { margin: auto; max-width: 380px; border-radius: var(--radius-lg); }
+  dialog.sheet[open] { animation: sheetInScale var(--dur) var(--ease-out); }
+}
+/* Open animates, close is instant: animating <dialog> closed needs
+   @starting-style + allow-discrete, and instant reads as responsive anyway. */
+@keyframes sheetInUp { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes sheetInScale { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+
+.sheet-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--sp-5);
+}
+.sheet-title { font-size: 1.1rem; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+
+.opt { border: 0; padding: 0; margin: 0 0 var(--sp-5); }
+.opt:last-child { margin-bottom: 0; }
+.opt-label {
+  padding: 0;
+  font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
+  font-weight: 600; color: var(--muted);
+  margin-bottom: var(--sp-2);
+}
+
+/* Segmented control built on real radios — arrow-key nav and AT semantics free. */
+.seg { display: flex; background: var(--card2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 3px; }
+/* Visually hidden but still in the accessibility tree. `width/height: 0` plus
+   `opacity: 0` (the obvious approach) drops the input from the a11y tree
+   entirely, which would throw away the arrow-key navigation and group
+   semantics that were the whole reason for using native radios here. */
+.seg input {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.seg label {
+  flex: 1; text-align: center; cursor: pointer;
+  padding: var(--sp-2) var(--sp-1);
+  min-height: var(--ctl-h);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: calc(var(--radius-sm) - 2px);
+  font-size: 0.85rem; color: var(--muted);
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+  white-space: nowrap;
+}
+.seg label:hover { color: var(--text); }
+.seg input:checked + label { background: var(--card); color: var(--text); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.seg input:focus-visible + label { box-shadow: var(--focus); }
+
 .hidden { display: none !important; }
 
 .toast {

@@ -14,6 +14,7 @@
     autoDl: $('auto-dl'), autoChip: $('auto-chip'),
     activityBlock: $('activity-block'), activityList: $('activity-list'),
     successFlash: $('success-flash'),
+    settings: $('settings'), settingsOpen: $('settings-open'), settingsClose: $('settings-close'),
     toast: $('toast'),
   };
 
@@ -500,6 +501,76 @@
     toast('Text sent');
   }
   el.sendText.addEventListener('click', sendTextNow);
+
+  // --- Display preferences ------------------------------------------------
+  // The inline <head> script already applied these before first paint; this
+  // block owns changes from here on. Stored value is intent ('system'), applied
+  // value is the resolution ('dark') — persisting the resolution instead would
+  // freeze 'System' to whatever the OS happened to be when it was saved.
+  const PREFS = {
+    theme:   { key: 'beam.theme',   values: ['system', 'light', 'dark'],         dflt: 'system' },
+    density: { key: 'beam.density', values: ['compact', 'default', 'large'],     dflt: 'default' },
+    motion:  { key: 'beam.motion',  values: ['system', 'full', 'reduced'],       dflt: 'system' },
+  };
+  const DARK_Q = matchMedia('(prefers-color-scheme: dark)');
+  const REDUCE_Q = matchMedia('(prefers-reduced-motion: reduce)');
+
+  // An unrecognised value would match no CSS rule and render a half-styled
+  // page, which is worse than a wrong-but-valid default. Always allowlist.
+  const readPref = (name) => {
+    const { key, values, dflt } = PREFS[name];
+    const v = safeGet(key);
+    return values.includes(v) ? v : dflt;
+  };
+
+  const resolvePref = (name, stored) => {
+    if (name === 'theme') return stored === 'system' ? (DARK_Q.matches ? 'dark' : 'light') : stored;
+    if (name === 'motion') return stored === 'system' ? (REDUCE_Q.matches ? 'reduced' : 'full') : stored;
+    return stored;
+  };
+
+  function applyPref(name, stored) {
+    const resolved = resolvePref(name, stored);
+    document.documentElement.dataset[name] = resolved;
+    if (name === 'theme') {
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', resolved === 'dark' ? '#1C1A1A' : '#F9F8F6');
+    }
+  }
+
+  for (const name of Object.keys(PREFS)) {
+    const stored = readPref(name);
+    applyPref(name, stored);
+    const input = document.querySelector(`input[name="${name}"][value="${stored}"]`);
+    if (input) input.checked = true;
+  }
+
+  el.settings.addEventListener('change', (e) => {
+    const name = e.target.name;
+    if (!PREFS[name]) return;
+    const value = e.target.value;
+    if (!PREFS[name].values.includes(value)) return;
+    safeSet(PREFS[name].key, value);
+    applyPref(name, value);
+  });
+
+  // Follow the OS live, but only while the stored preference is still 'system'.
+  DARK_Q.addEventListener('change', () => {
+    if (readPref('theme') === 'system') applyPref('theme', 'system');
+  });
+  REDUCE_Q.addEventListener('change', () => {
+    if (readPref('motion') === 'system') applyPref('motion', 'system');
+  });
+
+  el.settingsOpen.addEventListener('click', () => el.settings.showModal());
+  el.settingsClose.addEventListener('click', () => el.settings.close());
+  // Click on the backdrop (the dialog element itself, outside its content box).
+  el.settings.addEventListener('click', (e) => {
+    if (e.target !== el.settings) return;
+    const r = el.settings.getBoundingClientRect();
+    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    if (!inside) el.settings.close();
+  });
 
   // Auto-save: a real, persisted preference rather than something re-decided
   // every session.
