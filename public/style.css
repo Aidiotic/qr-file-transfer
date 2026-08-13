@@ -49,22 +49,32 @@
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1C1A1A;
-    --bg2: #242222;
-    --card: #242222;
-    --card2: #2C2A2A;
-    --line: #3D3A3A;
-    --text: #ECECEC;
-    --muted: #9E9E9E;
-    --accent: #D97757;
-    --accent-hover: #E88869;
-    --btn-bg: #EAEAEA;
-    --btn-text: #1C1A1A;
-    --btn-hover: #FFFFFF;
-  }
+/* Dark palette. Selected by an attribute, never by a media query: the inline
+   script in <head> resolves the stored preference (which may be "system") to a
+   concrete light/dark value before first paint. Keeping the media query and
+   adding an override would force this palette to be written twice — with no
+   way to share a declaration block in build-step-free CSS — and duplicated
+   palettes drift. :root[data-theme="dark"] is (0,2,0) vs :root at (0,1,0), so
+   it wins regardless of source order. */
+:root[data-theme="dark"] {
+  --bg: #1C1A1A;
+  --bg2: #242222;
+  --card: #242222;
+  --card2: #2C2A2A;
+  --line: #3D3A3A;
+  --text: #ECECEC;
+  --muted: #9E9E9E;
+  --accent: #D97757;
+  --accent-hover: #E88869;
+  --btn-bg: #EAEAEA;
+  --btn-text: #1C1A1A;
+  --btn-hover: #FFFFFF;
 }
+
+/* Drives the native scrollbar, the textarea caret, and the checkbox — none of
+   which followed the theme when it was expressed only in custom properties. */
+:root { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 

@@ -3,9 +3,31 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
 <meta name="theme-color" content="#F9F8F6" />
 <title>Beam — QR File Transfer</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+<script>
+// Resolve display prefs before first paint. This must stay inline and ahead of
+// the stylesheet: /app.js loads at end of <body>, so applying the theme there
+// would flash the wrong palette. Stores intent ("system"), applies a concrete
+// value — otherwise "System" would stop tracking the OS.
+(function () {
+  var get = function (k, allowed, dflt) {
+    try { var v = localStorage.getItem(k); return allowed.indexOf(v) > -1 ? v : dflt; }
+    catch (e) { return dflt; }
+  };
+  var m = function (q) { return window.matchMedia && window.matchMedia(q).matches; };
+  var theme = get('beam.theme', ['system', 'light', 'dark'], 'system');
+  var motion = get('beam.motion', ['system', 'full', 'reduced'], 'system');
+  var d = document.documentElement;
+  d.dataset.theme = theme === 'system' ? (m('(prefers-color-scheme: dark)') ? 'dark' : 'light') : theme;
+  d.dataset.density = get('beam.density', ['compact', 'default', 'large'], 'default');
+  d.dataset.motion = motion === 'system' ? (m('(prefers-reduced-motion: reduce)') ? 'reduced' : 'full') : motion;
+  var tc = document.querySelector('meta[name="theme-color"]');
+  if (tc) tc.setAttribute('content', d.dataset.theme === 'dark' ? '#1C1A1A' : '#F9F8F6');
+})();
+</script>
 <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
