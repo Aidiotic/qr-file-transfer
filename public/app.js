@@ -80,6 +80,16 @@
   const safeGet = (key) => { try { return localStorage.getItem(key); } catch { return null; } };
   const safeSet = (key, val) => { try { localStorage.setItem(key, val); } catch { /* non-fatal */ } };
 
+  // Read a duration token from CSS so JS timings can't drift from the stylesheet.
+  // Called at use time, never cached at boot, so it tracks a live settings change.
+  const cssMs = (name, fallback) => {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    if (!v) return fallback;
+    const n = parseFloat(v);
+    if (!isFinite(n)) return fallback;
+    return v.endsWith('ms') ? n : n * 1000;
+  };
+
   const fmtBytes = (n) => {
     if (n < 1024) return `${n} B`;
     if (n < 1048576) return `${(n / 1024).toFixed(0)} KB`;
@@ -131,13 +141,17 @@
   function enterTransfer() {
     if (!firstConnect) { showPane('transfer'); return; }
     firstConnect = false;
+    // Timings mirror the CSS tokens. Under reduced motion they collapse to ~0
+    // and this becomes an instant swap — no branching needed.
+    const hold = cssMs('--dur-slow', 500) + 50;
+    const fade = cssMs('--dur', 250);
     el.successFlash.classList.remove('hidden');
     requestAnimationFrame(() => el.successFlash.classList.add('show'));
     setTimeout(() => {
       showPane('transfer');
       el.successFlash.classList.remove('show');
-      setTimeout(() => el.successFlash.classList.add('hidden'), 250);
-    }, 550);
+      setTimeout(() => el.successFlash.classList.add('hidden'), fade);
+    }, hold);
   }
 
   const once = (target, event) => new Promise((res) => target.addEventListener(event, res, { once: true }));
@@ -468,7 +482,10 @@
   });
   el.textInput.addEventListener('input', () => {
     el.textInput.style.height = 'auto';
-    el.textInput.style.height = `${Math.min(el.textInput.scrollHeight, 120)}px`;
+    // Computed style already resolves max-height: var(--compose-max-h), so the
+    // autogrow cap tracks the density setting without a second source of truth.
+    const cap = parseFloat(getComputedStyle(el.textInput).maxHeight) || 120;
+    el.textInput.style.height = `${Math.min(el.textInput.scrollHeight, cap)}px`;
   });
 
   function sendTextNow() {

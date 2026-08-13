@@ -76,9 +76,52 @@
 :root { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
 
+/* --- Density ---------------------------------------------------------------
+   Two levers, split by responsibility: --fs-root scales type (every rem
+   follows automatically), the --sp ladder scales spacing. Deliberately NOT one
+   lever — scaling spacing off root font-size would couple touch targets to
+   text size and drag them under the usable minimum in Compact. --ctl-h is
+   absent from both blocks for the same reason: it stays 44px everywhere. */
+:root[data-density="compact"] {
+  --sp-1: 3px; --sp-2: 6px; --sp-3: 9px; --sp-4: 12px; --sp-5: 15px; --sp-6: 20px; --sp-7: 28px;
+  --fs-root: 15px;
+  --wrap-max: 440px;
+  --compose-max-h: 96px;
+}
+:root[data-density="large"] {
+  --sp-1: 5px; --sp-2: 10px; --sp-3: 15px; --sp-4: 20px; --sp-5: 26px; --sp-6: 36px; --sp-7: 52px;
+  --fs-root: 17.5px;
+  --wrap-max: 540px;
+  --compose-max-h: 160px;
+}
+
+/* --- Motion ----------------------------------------------------------------
+   Overriding the duration tokens expresses the intent; the blanket rule is the
+   safety net for any rule that still carries a literal duration. 0.01ms rather
+   than 0s so transitionend/animationend still fire and nothing waits forever
+   on a callback that never arrives. */
+:root[data-motion="reduced"] {
+  --dur-fast: 0.01ms;
+  --dur: 0.01ms;
+  --dur-slow: 0.01ms;
+}
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+/* An indeterminate spinner frozen after one iteration reads as broken, not as
+   calm. Drop it entirely and let the heading and status pill carry the state. */
+:root[data-motion="reduced"] .spinner { display: none; }
+
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 html, body { height: 100%; }
+
+html { font-size: var(--fs-root); }
 
 body {
   margin: 0;
