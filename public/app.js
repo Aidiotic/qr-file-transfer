@@ -116,16 +116,31 @@
     return `${Math.floor(s / 60)}m ${Math.ceil(s % 60)}s left`;
   };
 
-  const iconFor = (name, mime) => {
-    const m = mime || '';
-    if (m.startsWith('image/')) return '🖼️';
-    if (m.startsWith('video/')) return '🎬';
-    if (m.startsWith('audio/')) return '🎵';
-    if (m.includes('pdf')) return '📕';
-    if (/\.(zip|tar|gz|rar|7z)$/i.test(name)) return '🗜️';
-    if (/\.(js|ts|py|go|rs|java|c|cpp|json|html|css|sh)$/i.test(name)) return '📜';
-    return '📄';
+  // Monochrome line icons. Emoji render as full-colour, platform-specific
+  // glyphs that vary wildly between devices and fight a minimal palette; these
+  // inherit currentColor and look identical everywhere.
+  const ICON_PATHS = {
+    image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-6 6-3-3-4 4"/>',
+    video: '<rect x="2" y="5" width="14" height="14" rx="2"/><path d="M16 10l6-3v10l-6-3z"/>',
+    audio: '<path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/>',
+    doc:   '<path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/>',
+    zip:   '<path d="M20 7H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1z"/><path d="M5 7v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7"/><path d="M11 11h2M11 14h2"/>',
+    code:  '<path d="M9 18l-6-6 6-6"/><path d="M15 6l6 6-6 6"/>',
+    text:  '<path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/>',
   };
+
+  const iconKey = (name, mime) => {
+    const m = mime || '';
+    if (m.startsWith('image/')) return 'image';
+    if (m.startsWith('video/')) return 'video';
+    if (m.startsWith('audio/')) return 'audio';
+    if (/\.(zip|tar|gz|rar|7z)$/i.test(name)) return 'zip';
+    if (/\.(js|ts|py|go|rs|java|c|cpp|json|html|css|sh)$/i.test(name)) return 'code';
+    return 'doc';
+  };
+
+  const iconSvg = (key) =>
+    `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[key] || ICON_PATHS.doc}</svg>`;
 
   // The QR encodes http://<lan-ip>:<port>, which is NOT a secure context, so
   // navigator.clipboard is undefined on every device that reaches the app by
@@ -229,7 +244,9 @@
         <div class="item-action"></div>
       </div>
       <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>`;
-    li.querySelector('.item-icon').textContent = iconFor(name, mime);
+    // Static, code-defined markup — never user input. The filename below is
+    // still set via textContent.
+    li.querySelector('.item-icon').innerHTML = iconSvg(iconKey(name, mime));
     li.querySelector('.item-name').textContent = name;
     li.querySelector('.item-meta').textContent = `${dir === 'out' ? '↑ Sending' : '↓ Receiving'} · ${fmtBytes(size)}`;
     el.activityList.prepend(li);
@@ -366,7 +383,7 @@
     li.className = 'item done';
     li.innerHTML = `
       <div class="item-row">
-        <div class="item-icon">💬</div>
+        <div class="item-icon" aria-hidden="true">${iconSvg('text')}</div>
         <div class="item-body"><div class="item-name">${dir === 'out' ? 'Text sent' : 'Text received'}</div>
         <div class="item-meta">${dir === 'out' ? '↑' : '↓'} ${body.length} characters</div></div>
         <div class="item-action"><button type="button" class="copy-btn">Copy</button></div>

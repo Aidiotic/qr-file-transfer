@@ -167,7 +167,7 @@ body {
   flex: none;
 }
 
-.bolt { color: var(--accent); }
+.bolt { color: var(--accent); flex: none; }
 
 .pill {
   display: inline-flex;
@@ -345,7 +345,6 @@ body {
   margin: 0 auto var(--sp-4);
   border-radius: var(--radius);
   display: grid; place-items: center;
-  font-size: 1.4rem; font-weight: 500;
   color: var(--btn-text);
   background: var(--btn-bg);
   box-shadow: 0 4px 10px rgba(0,0,0,0.05);
@@ -493,7 +492,7 @@ body {
   background: var(--card2);
   border: 1px solid var(--line);
   display: grid; place-items: center;
-  font-size: 1.1rem;
+  color: var(--muted); /* consumed by the icons' stroke="currentColor" */
 }
 .item-body { flex: 1; min-width: 0; }
 .item-name {

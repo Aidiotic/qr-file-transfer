@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="light dark" />
 <meta name="theme-color" content="#F9F8F6" />
 <title>Beam — QR File Transfer</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23D97757' d='M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12z'/></svg>" />
 <script>
 // Resolve display prefs before first paint. This must stay inline and ahead of
 // the stylesheet: /app.js loads at end of <body>, so applying the theme there
@@ -33,7 +33,10 @@
 <body>
   <main class="wrap">
     <header class="head">
-      <div class="brand"><span class="bolt" aria-hidden="true">⚡</span> Beam</div>
+      <div class="brand">
+        <svg class="bolt" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12z"/></svg>
+        Beam
+      </div>
       <div class="head-right">
         <p class="pill" id="pill" role="status" aria-live="polite"><span class="dot" id="dot" aria-hidden="true"></span><span id="pill-text">Starting…</span></p>
         <button type="button" class="icon-btn" id="settings-open" aria-haspopup="dialog" aria-label="Settings">
@@ -65,7 +68,11 @@
 
       <div class="stage-region" data-region="ready">
         <button class="drop" id="drop" type="button" aria-label="Choose files to send">
-          <span class="drop-icon" aria-hidden="true">↑</span>
+          <span class="drop-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+            </svg>
+          </span>
           <span class="drop-main">Drop files, or tap to browse</span>
           <span class="drop-sub">Paste works too</span>
         </button>
