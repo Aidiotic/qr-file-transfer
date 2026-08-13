@@ -5,9 +5,7 @@
 
   const el = {
     pill: $('pill'), dot: $('dot'), pillText: $('pill-text'),
-    pair: $('pair'), qrImg: $('qr-img'), copyLink: $('copy-link'),
-    connecting: $('connecting'),
-    transfer: $('transfer'),
+    stage: $('stage'), qrImg: $('qr-img'), copyLink: $('copy-link'),
     drop: $('drop'), fileInput: $('file-input'),
     textToggle: $('text-toggle'), closeCompose: $('close-compose'),
     compose: $('compose'), textInput: $('text-input'), sendText: $('send-text'),
@@ -62,6 +60,13 @@
       requestAnimationFrame(flushRafUpdates);
     }
   }
+  // Drop a queued repaint. Required before writing a transfer's terminal state:
+  // a frame scheduled during the last chunk would otherwise fire afterwards and
+  // overwrite the final text and the 100% bar with stale in-flight values.
+  function cancelRafUpdate(state) {
+    pendingUpdates.delete(state);
+  }
+
   function flushRafUpdates() {
     rafScheduled = false;
     for (const state of pendingUpdates) {
@@ -130,17 +135,17 @@
     el.dot.className = `dot${state ? ` ${state}` : ''}`;
   }
 
-  function showPane(name) {
-    el.pair.classList.toggle('hidden', name !== 'pair');
-    el.connecting.classList.toggle('hidden', name !== 'connecting');
-    el.transfer.classList.toggle('hidden', name !== 'transfer');
+  // One attribute drives the whole surface: 'idle' | 'waiting' | 'connecting'
+  // | 'ready' | 'lost'. CSS owns which region that reveals.
+  function setState(name) {
+    el.stage.dataset.state = name;
   }
 
   // A brief, satisfying confirmation the instant devices pair, instead of an
   // abrupt jump-cut straight into the transfer screen.
   let firstConnect = true;
   function enterTransfer() {
-    if (!firstConnect) { showPane('transfer'); return; }
+    if (!firstConnect) { setState('ready'); return; }
     firstConnect = false;
     // Timings mirror the CSS tokens. Under reduced motion they collapse to ~0
     // and this becomes an instant swap — no branching needed.
@@ -149,7 +154,7 @@
     el.successFlash.classList.remove('hidden');
     requestAnimationFrame(() => el.successFlash.classList.add('show'));
     setTimeout(() => {
-      showPane('transfer');
+      setState('ready');
       el.successFlash.classList.remove('show');
       setTimeout(() => el.successFlash.classList.add('hidden'), fade);
     }, hold);
@@ -258,6 +263,7 @@
     channel.send(JSON.stringify({ t: 'end', id }));
 
     const secs = (performance.now() - started) / 1000;
+    cancelRafUpdate(sendState);
     ui.bar.style.width = '100%';
     ui.li.classList.add('done');
     ui.meta.textContent = `↑ Sent · ${fmtBytes(file.size)} in ${secs.toFixed(1)}s · ${fmtRate(file.size / secs)}`;
@@ -282,11 +288,13 @@
     } else if (msg.t === 'end' && incoming) {
       const inc = incoming;
       incoming = null;
+      cancelRafUpdate(inc);
       if (inc.buf.length) inc.parts.push(new Blob(inc.buf));
       const blob = new Blob(inc.parts, { type: inc.mime || 'application/octet-stream' });
       const url = URL.createObjectURL(blob);
       const secs = (performance.now() - inc.started) / 1000;
 
+      inc.ui.bar.style.width = '100%';
       inc.ui.li.classList.add('done');
       inc.ui.meta.textContent = `↓ ${fmtBytes(blob.size)} · ${secs.toFixed(1)}s · ${fmtRate(blob.size / secs)}`;
       const a = document.createElement('a');
@@ -388,7 +396,14 @@
       const s = pc.connectionState;
       if (s === 'connected') setStatus('Connected', 'live');
       else if (s === 'connecting') setStatus('Linking…');
-      else if (s === 'failed') { setStatus('Connection failed', 'dead'); toast('Could not reach the other device'); }
+      else if (s === 'failed') {
+        setStatus('Connection failed', 'dead');
+        toast('Could not reach the other device');
+        // Required counterpart to advancing off the QR on 'peer-joined' —
+        // without this a failed handshake strands the host on a spinner.
+        if (role === 'host') setState('waiting');
+        else setState('lost');
+      }
       else if (s === 'disconnected') setStatus('Reconnecting…');
     });
 
@@ -405,6 +420,9 @@
 
       if (msg.type === 'peer-joined') {
         setStatus('Pairing…');
+        // The QR is meaningless once the phone has joined. Safe because the
+        // 'failed' handler below sends the host back to 'waiting'.
+        setState('connecting');
         newPeerConnection();
         if (role === 'host') {
           setupChannel(pc.createDataChannel('files', { ordered: true }));
@@ -428,10 +446,13 @@
         queue.length = 0;
         if (role === 'host') {
           setStatus('Waiting for phone…');
-          showPane('pair');
+          setState('waiting');
           toast('Phone disconnected — scan again to reconnect');
         } else {
+          // The peer cannot re-initiate on its own, so say so plainly rather
+          // than leaving a drop zone that looks usable but isn't.
           setStatus('Computer disconnected', 'dead');
+          setState('lost');
         }
       }
     });
@@ -584,7 +605,7 @@
   // --- Boot ---------------------------------------------------------------
   (async function init() {
     if (isPeer) {
-      showPane('connecting');
+      setState('connecting');
       setStatus('Connecting…');
       const token = new URLSearchParams(location.search).get('t');
       connectSignaling(location.pathname.split('/')[2], token);
@@ -600,7 +621,7 @@
         console.error('QR generation failed:', err);
         toast('QR generation failed — use link instead');
       }
-      showPane('pair');
+      setState('waiting');
       connectSignaling(id, token);
     }
   })();

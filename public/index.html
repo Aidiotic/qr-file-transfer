@@ -45,54 +45,66 @@
       </div>
     </header>
 
-    <!-- PAIRING -->
-    <section id="pair" class="pane center hidden">
-      <div class="qr-frame">
-        <img id="qr-img" alt="QR code to pair your phone" />
-        <div class="scanline"></div>
+    <!-- One surface that morphs by connection state. JS writes a single
+         data-state attribute; CSS decides which region is visible. -->
+    <section class="stage" id="stage" data-state="idle">
+
+      <div class="stage-region center" data-region="pair">
+        <div class="qr-frame">
+          <img id="qr-img" alt="QR code to pair your phone" />
+        </div>
+        <h2 class="stage-title">Scan to connect</h2>
+        <p class="sub">Point your phone's camera at this code — files travel directly between your devices, never through the cloud.</p>
+        <button class="ghost-link" id="copy-link" type="button">Copy link instead</button>
       </div>
-      <h2 class="pair-title">Scan to connect</h2>
-      <p class="sub">Point your phone's camera at this code — files travel directly between your devices, never through the cloud.</p>
-      <button class="ghost-link" id="copy-link">Copy link instead</button>
-    </section>
 
-    <!-- CONNECTING (peer) -->
-    <section id="connecting" class="pane center hidden">
-      <div class="spinner"></div>
-      <h2 class="pair-title">Connecting…</h2>
-    </section>
+      <div class="stage-region center" data-region="connecting">
+        <div class="spinner"></div>
+        <h2 class="stage-title">Connecting…</h2>
+      </div>
 
-    <!-- TRANSFER -->
-    <section id="transfer" class="pane hidden">
-      <div class="drop" id="drop">
-        <input type="file" id="file-input" multiple hidden />
-        <div class="drop-inner">
-          <div class="drop-icon">↑</div>
-          <div class="drop-main">Drop files, or tap to browse</div>
-          <div class="drop-sub">Paste works too</div>
+      <div class="stage-region" data-region="ready">
+        <button class="drop" id="drop" type="button">
+          <span class="drop-icon" aria-hidden="true">↑</span>
+          <span class="drop-main">Drop files, or tap to browse</span>
+          <span class="drop-sub">Paste works too</span>
+        </button>
+
+        <div class="quick-row">
+          <button class="chip" id="text-toggle" type="button">＋ Text or link</button>
+          <label class="chip toggle" id="auto-chip" for="auto-dl">
+            <input type="checkbox" id="auto-dl" />
+            <span>Auto‑save</span>
+          </label>
+        </div>
+
+        <div class="compose hidden" id="compose">
+          <label class="sr-only" for="text-input">Text or link to send</label>
+          <textarea id="text-input" rows="1" placeholder="Paste a link or note…"></textarea>
+          <button id="send-text" class="btn small" type="button">Send</button>
+          <button id="close-compose" class="icon-btn" aria-label="Cancel" type="button">✕</button>
         </div>
       </div>
 
-      <div class="quick-row">
-        <button class="chip" id="text-toggle">＋ Text or link</button>
-        <label class="chip toggle" id="auto-chip">
-          <input type="checkbox" id="auto-dl" />
-          <span>Auto‑save</span>
-        </label>
+      <div class="stage-region center" data-region="lost">
+        <h2 class="stage-title">Computer disconnected</h2>
+        <p class="sub">The connection to the other device dropped. Scan the QR code again to reconnect.</p>
       </div>
 
-      <div class="compose hidden" id="compose">
-        <textarea id="text-input" rows="1" placeholder="Paste a link or note…"></textarea>
-        <button id="send-text" class="btn small">Send</button>
-        <button id="close-compose" class="icon-btn" aria-label="Cancel" type="button">✕</button>
-      </div>
+    </section>
 
-      <section class="list-block hidden" id="activity-block">
-        <h3 class="list-head">Activity</h3>
-        <ul class="list" id="activity-list"></ul>
-      </section>
+    <!-- Deliberately a sibling of #stage, not a child: transfer history must
+         survive a disconnect. Nested inside the old #transfer pane, it was
+         wiped every time the host fell back to the pairing screen. -->
+    <section class="list-block hidden" id="activity-block">
+      <h3 class="list-head">Activity</h3>
+      <ul class="list" id="activity-list"></ul>
     </section>
   </main>
+
+  <!-- Outside #drop: interactive content nested in a <button> is invalid and
+       breaks activation. -->
+  <input type="file" id="file-input" multiple hidden />
 
   <div class="success-flash hidden" id="success-flash">
     <div class="success-circle">

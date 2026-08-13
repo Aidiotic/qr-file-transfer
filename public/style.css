@@ -189,11 +189,22 @@ body {
   100% { box-shadow: 0 0 0 0 rgba(74,156,118,0); }
 }
 
-/* --- Pane transitions (250ms: 2x snappier, keeps smoothness) ------ */
-.pane { animation: paneIn var(--dur) var(--ease-out); }
-.pane.hidden { display: none; }
-@keyframes paneIn {
-  from { opacity: 0; transform: translateY(10px); }
+/* --- Stage -----------------------------------------------------------------
+   Regions are gated declaratively by the stage's data-state. JS writes one
+   attribute rather than toggling .hidden on three separate nodes, so adding a
+   state later is a CSS-only change. */
+.stage [data-region] { display: none; }
+.stage[data-state="waiting"]    [data-region="pair"],
+.stage[data-state="connecting"] [data-region="connecting"],
+.stage[data-state="ready"]      [data-region="ready"],
+.stage[data-state="lost"]       [data-region="lost"] {
+  display: block;
+  animation: stageIn var(--dur) var(--ease-out);
+}
+/* "idle" shows nothing — the brief moment before the session exists. */
+
+@keyframes stageIn {
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
 
@@ -228,7 +239,7 @@ body {
   100% { top: 100%; }
 }
 
-.pair-title {
+.stage-title {
   font-size: 1.4rem;
   font-weight: 600;
   margin: 0 0 10px;
@@ -297,8 +308,14 @@ body {
 }
 @keyframes popIn { to { transform: scale(1); } }
 
-/* --- Drop zone (hero) -------------------------------------------------- */
+/* --- Drop zone (hero) --------------------------------------------------
+   A real <button> so it is keyboard reachable; these declarations shed the UA
+   button styling that would otherwise fight the design. */
 .drop {
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: inherit;
   border: 1px dashed var(--muted);
   background: var(--card2);
   border-radius: var(--radius);
@@ -307,6 +324,7 @@ body {
   padding: var(--sp-7) var(--sp-5);
   text-align: center;
 }
+.drop-icon, .drop-main, .drop-sub { display: block; }
 .drop:hover { border-color: var(--text); background: var(--card); }
 .drop.over {
   border-color: var(--accent);
@@ -374,7 +392,7 @@ body {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  animation: paneIn var(--dur-fast) var(--ease-out);
+  animation: stageIn var(--dur-fast) var(--ease-out);
 }
 #text-input {
   flex: 1;
@@ -605,6 +623,16 @@ dialog.sheet::backdrop { background: rgba(0,0,0,0.4); }
 .seg input:focus-visible + label { box-shadow: var(--focus); }
 
 .hidden { display: none !important; }
+
+/* Visible to assistive tech, not to the eye. */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 
 .toast {
   position: fixed;
