@@ -64,7 +64,7 @@
       </div>
 
       <div class="stage-region" data-region="ready">
-        <button class="drop" id="drop" type="button">
+        <button class="drop" id="drop" type="button" aria-label="Choose files to send">
           <span class="drop-icon" aria-hidden="true">↑</span>
           <span class="drop-main">Drop files, or tap to browse</span>
           <span class="drop-sub">Paste works too</span>
@@ -106,11 +106,15 @@
        breaks activation. -->
   <input type="file" id="file-input" multiple hidden />
 
-  <div class="success-flash hidden" id="success-flash">
+  <div class="success-flash hidden" id="success-flash" aria-hidden="true">
     <div class="success-circle">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>
     </div>
   </div>
+
+  <!-- Discrete events only (transfer complete, text received). Deliberately
+       separate from the activity list, whose meta text updates ~10x/sec. -->
+  <div class="sr-only" id="live-region" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <!-- Native <dialog>: focus trap, Esc-to-close, ::backdrop and inert background
        come free. Radio groups give arrow-key navigation with zero JS. -->

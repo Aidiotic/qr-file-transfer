@@ -119,6 +119,14 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+/* Focus ring. Defined once, before anything suppresses a UA outline, so no
+   control can end up with no visible focus state. */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+  border-radius: var(--radius-sm);
+}
+
 html, body { height: 100%; }
 
 html { font-size: var(--fs-root); }
@@ -180,8 +188,8 @@ body {
   box-shadow: 0 0 0 0 currentColor;
   flex: none;
 }
-.dot.live { background: var(--good); animation: pulse 2s infinite; }
-.dot.dead { background: var(--bad); }
+.dot[data-state="live"] { background: var(--good); }
+.dot[data-state="dead"] { background: var(--bad); }
 
 @keyframes pulse {
   0% { box-shadow: 0 0 0 0 rgba(74,156,118,.5); }
@@ -300,6 +308,7 @@ body {
   width: 76px; height: 76px;
   border-radius: 50%;
   background: var(--good);
+  color: #fff; /* consumed by the checkmark's stroke="currentColor" */
   display: grid;
   place-items: center;
   transform: scale(0.4);
@@ -370,12 +379,18 @@ body {
 }
 .chip:hover { border-color: var(--muted); color: var(--text); }
 .chip.toggle { position: relative; }
+/* Same reasoning as .seg input: zero-size + opacity 0 drops the control out of
+   the accessibility tree, so the checkbox becomes unreachable by screen reader. */
 .chip.toggle input {
   position: absolute;
-  opacity: 0;
-  width: 0; height: 0;
-  pointer-events: none;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
+/* The input is invisible, so surface its focus on the chip the user can see. */
+.chip.toggle:has(input:focus-visible) { box-shadow: var(--focus); }
 .chip.toggle.active {
   background: var(--btn-bg);
   color: var(--btn-text);

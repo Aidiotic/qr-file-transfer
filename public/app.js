@@ -13,6 +13,7 @@
     activityBlock: $('activity-block'), activityList: $('activity-list'),
     successFlash: $('success-flash'),
     settings: $('settings'), settingsOpen: $('settings-open'), settingsClose: $('settings-close'),
+    liveRegion: $('live-region'),
     toast: $('toast'),
   };
 
@@ -71,7 +72,11 @@
     rafScheduled = false;
     for (const state of pendingUpdates) {
       const rate = ((state.received - state.lastBytes) * 1000) / (state.now - state.lastTime);
-      state.ui.bar.style.width = `${(state.received / state.size) * 100}%`;
+      const pct = (state.received / state.size) * 100;
+      state.ui.bar.style.width = `${pct}%`;
+      // Screen readers poll progressbar rather than announcing each change, so
+      // this is safe to update at the repaint rate.
+      state.ui.barTrack.setAttribute('aria-valuenow', String(Math.round(pct)));
       state.ui.meta.textContent = `${fmtBytes(state.received)} / ${fmtBytes(state.size)} · ${fmtRate(rate)} · ${fmtEta((state.size - state.received) / rate)}`;
       state.lastPaint = state.now;
       state.lastBytes = state.received;
@@ -122,6 +127,37 @@
     return '📄';
   };
 
+  // The QR encodes http://<lan-ip>:<port>, which is NOT a secure context, so
+  // navigator.clipboard is undefined on every device that reaches the app by
+  // LAN IP — i.e. the phone, always. Fall back to the legacy path there.
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        toast('Copied');
+        return true;
+      }
+    } catch { /* fall through to the legacy path */ }
+
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.className = 'sr-only';
+    document.body.appendChild(ta);
+    try {
+      ta.select();
+      ta.setSelectionRange(0, ta.value.length); // iOS ignores select() alone
+      const ok = document.execCommand('copy');
+      toast(ok ? 'Copied' : 'Copy blocked by browser');
+      return ok;
+    } catch {
+      toast('Copy blocked by browser');
+      return false;
+    } finally {
+      ta.remove();
+    }
+  }
+
   let toastTimer;
   function toast(msg) {
     el.toast.textContent = msg;
@@ -132,7 +168,17 @@
 
   function setStatus(text, state) {
     el.pillText.textContent = text;
-    el.dot.className = `dot${state ? ` ${state}` : ''}`;
+    // dataset rather than className: assigning className wiped every other
+    // class on the element, which is a footgun waiting for the first person to
+    // add a second class to the dot.
+    el.dot.dataset.state = state || '';
+  }
+
+  // Discrete announcements only. The activity list itself must NOT be a live
+  // region — .item-meta is rewritten ~10x/sec during a transfer, which would
+  // flood a screen reader into uselessness.
+  function announce(msg) {
+    el.liveRegion.textContent = msg;
   }
 
   // One attribute drives the whole surface: 'idle' | 'waiting' | 'connecting'
@@ -175,14 +221,14 @@
     li.className = 'item';
     li.innerHTML = `
       <div class="item-row">
-        <div class="item-icon"></div>
+        <div class="item-icon" aria-hidden="true"></div>
         <div class="item-body">
           <div class="item-name"></div>
           <div class="item-meta"></div>
         </div>
         <div class="item-action"></div>
       </div>
-      <div class="bar"><i></i></div>`;
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>`;
     li.querySelector('.item-icon').textContent = iconFor(name, mime);
     li.querySelector('.item-name').textContent = name;
     li.querySelector('.item-meta').textContent = `${dir === 'out' ? '↑ Sending' : '↓ Receiving'} · ${fmtBytes(size)}`;
@@ -192,6 +238,7 @@
       li,
       meta: li.querySelector('.item-meta'),
       bar: li.querySelector('.bar > i'),
+      barTrack: li.querySelector('.bar'),
       action: li.querySelector('.item-action'),
     };
   }
@@ -267,7 +314,9 @@
     ui.bar.style.width = '100%';
     ui.li.classList.add('done');
     ui.meta.textContent = `↑ Sent · ${fmtBytes(file.size)} in ${secs.toFixed(1)}s · ${fmtRate(file.size / secs)}`;
+    ui.barTrack.setAttribute('aria-valuenow', '100');
     ui.action.textContent = '✓';
+    announce(`Sent ${file.name}`);
   }
 
   // --- Receiving ----------------------------------------------------------
@@ -295,6 +344,7 @@
       const secs = (performance.now() - inc.started) / 1000;
 
       inc.ui.bar.style.width = '100%';
+      inc.ui.barTrack.setAttribute('aria-valuenow', '100');
       inc.ui.li.classList.add('done');
       inc.ui.meta.textContent = `↓ ${fmtBytes(blob.size)} · ${secs.toFixed(1)}s · ${fmtRate(blob.size / secs)}`;
       const a = document.createElement('a');
@@ -304,6 +354,7 @@
       inc.ui.action.appendChild(a);
       if (el.autoDl.checked) a.click();
       toast(`Received ${inc.name}`);
+      announce(`Received ${inc.name}`);
     } else if (msg.t === 'text') {
       renderText(msg.body, 'in');
     }
@@ -318,7 +369,7 @@
         <div class="item-icon">💬</div>
         <div class="item-body"><div class="item-name">${dir === 'out' ? 'Text sent' : 'Text received'}</div>
         <div class="item-meta">${dir === 'out' ? '↑' : '↓'} ${body.length} characters</div></div>
-        <div class="item-action"><button>Copy</button></div>
+        <div class="item-action"><button type="button" class="copy-btn">Copy</button></div>
       </div>
       <div class="text-body"></div>`;
     const bodyEl = li.querySelector('.text-body');
@@ -332,13 +383,12 @@
         bodyEl.appendChild(document.createTextNode(tok));
       }
     });
-    li.querySelector('button').addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(body); toast('Copied'); }
-      catch { toast('Copy blocked by browser'); }
-    });
+    // Query the specific class, not the first <button> in the subtree — adding
+    // any other button to this markup would otherwise silently steal the handler.
+    li.querySelector('.copy-btn').addEventListener('click', () => copyText(body));
     el.activityList.prepend(li);
     trimActivityList();
-    if (dir === 'in') toast('Text received');
+    if (dir === 'in') { toast('Text received'); announce('Text received'); }
   }
 
   // --- WebRTC -------------------------------------------------------------
@@ -481,8 +531,7 @@
   // Copy the join link instead of scanning — useful for AirDrop-ing the link
   // to another app rather than using the camera.
   el.copyLink.addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(joinUrl); toast('Link copied'); }
-    catch { toast('Copy blocked by browser'); }
+    if (await copyText(joinUrl)) toast('Link copied');
   });
 
   // Text/link composer: collapsed by default, expands inline on demand so it
