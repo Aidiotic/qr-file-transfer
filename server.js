@@ -3,8 +3,47 @@ const { WebSocketServer } = require('ws');
 const http = require('http');
 const os = require('os');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const PORT = process.env.PORT || 6798;
+const PID_FILE = path.join(__dirname, '.server.pid');
+
+// Kill any orphaned process from a previous server run
+function cleanupOrphanedProcess() {
+  if (!fs.existsSync(PID_FILE)) return;
+  try {
+    const oldPid = parseInt(fs.readFileSync(PID_FILE, 'utf8').trim());
+    if (oldPid && oldPid !== process.pid && !isNaN(oldPid)) {
+      // Check if the process exists by sending signal 0 (does not kill, just checks)
+      try {
+        process.kill(oldPid, 0);
+        // Process exists, kill it
+        process.kill(oldPid, 'SIGTERM');
+        console.log(`Cleaned up orphaned process ${oldPid}`);
+      } catch (e) {
+        // Process doesn't exist, just remove the stale PID file
+      }
+    }
+  } catch (e) {
+    // Ignore errors reading/parsing PID file
+  }
+  // Remove the old PID file
+  try { fs.unlinkSync(PID_FILE); } catch (e) { /* ignore */ }
+}
+
+// Write current PID and clean up on shutdown
+function writePidFile() {
+  fs.writeFileSync(PID_FILE, process.pid.toString());
+  process.on('exit', () => {
+    try { fs.unlinkSync(PID_FILE); } catch (e) { /* ignore */ }
+  });
+  process.on('SIGTERM', () => process.exit(0));
+  process.on('SIGINT', () => process.exit(0));
+}
+
+cleanupOrphanedProcess();
+writePidFile();
 const SESSION_TTL_MS = 5 * 60 * 1000; // drop unpaired sessions after 5 minutes
 
 const app = express();
