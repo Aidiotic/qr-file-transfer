@@ -28,6 +28,21 @@ Because both devices are on the same LAN, a public STUN server is enough — no 
 - **Auto‑save** — optional; received files download automatically.
 - **Reconnect** — if the phone locks or backgrounds its tab, the same QR can simply be scanned again.
 - **No size or type limits.**
+- **Settings panel** — Theme (System/Light/Dark), Density (Compact/Default/Large), Motion (System/Full/Reduced).
+- **Keyboard accessible** — focus rings, drop-zone reachable by Tab, live announcements for assistive tech.
+- **Offline-first** — QR code bundled locally; works without CDN access.
+
+## Display & Accessibility
+
+The UI is fully responsive and adaptable to user preferences:
+
+- **Theme:** Switch between System, Light, and Dark modes. Settings persist across sessions.
+- **Density:** Choose Compact, Default, or Large spacing and text sizes. Touch targets stay at least 44px in all modes.
+- **Motion:** Respect system-level reduced-motion preference, or override it with Full or Reduced. Under Reduced, animations collapse to near-instant and decorative motion is hidden.
+- **Keyboard navigation:** All controls reachable via Tab. Focus rings visible on keyboard focus. Native radio groups for settings provide arrow-key navigation.
+- **Screen readers:** Live regions announce transfer start/complete and text receipt. Progress bars expose `aria-valuenow` as transfers progress. All decorative elements marked `aria-hidden`.
+
+Settings are stored in localStorage and restored on page load. The inline `<head>` script resolves theme/motion settings before first paint, eliminating flash-of-wrong-color.
 
 ## Performance notes
 
@@ -51,8 +66,33 @@ Measured locally: **64 MB transferred byte‑perfect in 5.6 s (~11.4 MB/s)** wit
 
 Runs over plain HTTP/WS for LAN simplicity. **Use it on a trusted network; don't expose the port to the internet.**
 
+## Architecture
+
+**No build step, no dependencies beyond Express and ws.** The app is three files:
+
+- `server.js` — Express + WebSocket signaling server. Generates QR URLs, relays WebRTC metadata, reaps stale sessions.
+- `public/app.js` — All client logic: QR rendering, WebRTC peer setup, file I/O, UI state, settings persistence. ~700 lines, vanilla JS.
+- `public/style.css` — Responsive layout using CSS custom properties for theming and density. ~600 lines.
+- `public/index.html` — Semantic HTML, no template engine.
+
+The QR library (`qrcode.min.js`) is bundled locally so the app works offline.
+
 ## Customization
 
-- `[FILL: max file size]` — none enforced; add a check in `sendFile()` if you want one.
-- `[FILL: allowed file types]` — none enforced; filter in `enqueue()` if you want a whitelist.
-- `PORT` — override with the `PORT` env var.
+- **Max file size** — none enforced; add a check in `sendFile()` if you want one.
+- **Allowed file types** — none enforced; filter in `enqueue()` if you want a whitelist.
+- **Port** — override with the `PORT` env var (default 6798).
+- **Theme colors** — edit the `--text`, `--bg`, `--accent` tokens in `style.css` under `:root` and `:root[data-theme="dark"]`.
+- **LAN address detection** — `getLanIp()` in `server.js` prefers private-range IPv4, falls back to Bonjour hostname (handles hotspots).
+
+## Testing
+
+```bash
+npm start
+# Opens http://MacBook-Pro.local:6798
+
+# In another terminal, check the API:
+curl -X POST http://localhost:6798/api/session | jq
+```
+
+Performance benchmarks are in [`BENCHMARKS.md`](BENCHMARKS.md) and run via `node benchmarks.js`.
