@@ -9,7 +9,6 @@
     connecting: $('connecting'),
     transfer: $('transfer'),
     drop: $('drop'), fileInput: $('file-input'),
-    quickRow: $('quick-row'),
     textToggle: $('text-toggle'), closeCompose: $('close-compose'),
     compose: $('compose'), textInput: $('text-input'), sendText: $('send-text'),
     autoDl: $('auto-dl'), autoChip: $('auto-chip'),
@@ -22,6 +21,8 @@
   // Read the file in large blocks (few disk round-trips), then push it out in
   // chunks small enough for SCTP. Adaptive buffer sizing based on device RAM.
   const DEFAULT_CHUNK = 1024 * 1024; // 1 MB: 4x fewer send() calls, 10-15% throughput boost
+  const UI_INTERVAL = 100;   // ms between progress repaints — gates the RAF scheduler
+  const TOAST_MS = 2200;     // reading time, not motion time: never scaled by motion prefs
   const AUTO_SAVE_KEY = 'beam-autosave';
   const MAX_LIST_ITEMS = 50; // Cap activity list to prevent DOM bloat on long sessions
 
@@ -74,6 +75,11 @@
   }
 
   // --- Helpers ------------------------------------------------------------
+  // localStorage throws SecurityError outright when site data is blocked, which
+  // would otherwise kill the rest of the boot sequence. Never let it escape.
+  const safeGet = (key) => { try { return localStorage.getItem(key); } catch { return null; } };
+  const safeSet = (key, val) => { try { localStorage.setItem(key, val); } catch { /* non-fatal */ } };
+
   const fmtBytes = (n) => {
     if (n < 1024) return `${n} B`;
     if (n < 1048576) return `${(n / 1024).toFixed(0)} KB`;
@@ -105,7 +111,7 @@
     el.toast.textContent = msg;
     el.toast.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.toast.classList.remove('show'), 2200);
+    toastTimer = setTimeout(() => el.toast.classList.remove('show'), TOAST_MS);
   }
 
   function setStatus(text, state) {
@@ -480,10 +486,10 @@
 
   // Auto-save: a real, persisted preference rather than something re-decided
   // every session.
-  el.autoDl.checked = localStorage.getItem(AUTO_SAVE_KEY) === '1';
+  el.autoDl.checked = safeGet(AUTO_SAVE_KEY) === '1';
   el.autoChip.classList.toggle('active', el.autoDl.checked);
   el.autoDl.addEventListener('change', () => {
-    localStorage.setItem(AUTO_SAVE_KEY, el.autoDl.checked ? '1' : '0');
+    safeSet(AUTO_SAVE_KEY, el.autoDl.checked ? '1' : '0');
     el.autoChip.classList.toggle('active', el.autoDl.checked);
   });
 
